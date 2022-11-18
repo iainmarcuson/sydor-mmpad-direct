@@ -2,10 +2,10 @@
 TOP = .
 include $(TOP)/configure/CONFIG
 DIRS := $(DIRS) configure
-DIRS := $(DIRS) pilatusApp
+DIRS := $(DIRS) mmpadApp
 ifeq ($(BUILD_IOCS), YES)
 DIRS := $(DIRS) $(filter-out $(DIRS), $(wildcard iocs))
-iocs_DEPEND_DIRS += pilatusApp
+iocs_DEPEND_DIRS += mmpadApp
 endif
 include $(TOP)/configure/RULES_TOP
 

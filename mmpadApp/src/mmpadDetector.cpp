@@ -1,4 +1,4 @@
-/* pilatusDetector.cpp
+/* mmpadDetector.cpp
  *
  * This is a driver for a Pilatus pixel array detector.
  *
@@ -38,6 +38,9 @@
 
 #include "ADDriver.h"
 
+#include "st_servers.h"
+#include "st_if_defs.h"
+
 #define DRIVER_VERSION      2
 #define DRIVER_REVISION     9
 #define DRIVER_MODIFICATION 0
@@ -74,7 +77,7 @@ typedef struct {
 
 static const char *gainStrings[] = {"lowG", "midG", "highG", "uhighG"};
 
-static const char *driverName = "pilatusDetector";
+static const char *driverName = "mmpadDetector";
 
 #define PilatusDelayTimeString      "DELAY_TIME"
 #define PilatusThresholdString      "THRESHOLD"
@@ -127,9 +130,9 @@ static const char *driverName = "pilatusDetector";
 
 
 /** Driver for Dectris Pilatus pixel array detectors using their camserver server over TCP/IP socket */
-class pilatusDetector : public ADDriver {
+class mmpadDetector : public ADDriver {
 public:
-    pilatusDetector(const char *portName, const char *camserverPort,
+    mmpadDetector(const char *portName, const char *camserverPort,
                     int maxSizeX, int maxSizeY,
                     int maxBuffers, size_t maxMemory,
                     int priority, int stackSize);
@@ -230,9 +233,13 @@ protected:
     double demandedEnergy;
     int firstStatusCall;
     double camserverVersion;
+
+    // MMPAD Interface
+    ST_INTERFACE::StServers mServers; ///< MMPAD Server management class
+    
 };
 
-void pilatusDetector::readBadPixelFile(const char *badPixelFile)
+void mmpadDetector::readBadPixelFile(const char *badPixelFile)
 {
     int i; 
     int xbad, ybad, xgood, ygood;
@@ -271,7 +278,7 @@ void pilatusDetector::readBadPixelFile(const char *badPixelFile)
 }
 
 
-void pilatusDetector::readFlatFieldFile(const char *flatFieldFile)
+void mmpadDetector::readFlatFieldFile(const char *flatFieldFile)
 {
     size_t i;
     int status;
@@ -316,7 +323,7 @@ void pilatusDetector::readFlatFieldFile(const char *flatFieldFile)
 }
 
 
-void pilatusDetector::makeMultipleFileFormat(const char *baseFileName)
+void mmpadDetector::makeMultipleFileFormat(const char *baseFileName)
 {
     /* This function uses the code from camserver */
     char *p, *q;
@@ -371,7 +378,7 @@ void pilatusDetector::makeMultipleFileFormat(const char *baseFileName)
  * the creation time of the file is after a start time passed to it, to force it to wait
  * for a new file to be created.
  */
-asynStatus pilatusDetector::waitForFileToExist(const char *fileName, epicsTimeStamp *pStartTime, double timeout, NDArray *pImage)
+asynStatus mmpadDetector::waitForFileToExist(const char *fileName, epicsTimeStamp *pStartTime, double timeout, NDArray *pImage)
 {
     int fd=-1;
     int fileExists=0;
@@ -436,7 +443,7 @@ asynStatus pilatusDetector::waitForFileToExist(const char *fileName, epicsTimeSt
 /** This function replaces bad pixels in the specified image with their replacements
  * according to the bad pixel map.
  */
-void pilatusDetector::correctBadPixels(NDArray *pImage)
+void mmpadDetector::correctBadPixels(NDArray *pImage)
 {
     int i;
     int numBadPixels;
@@ -448,7 +455,7 @@ void pilatusDetector::correctBadPixels(NDArray *pImage)
     }    
 }
 
-int pilatusDetector::stringEndsWith(const char *aString, const char *aSubstring, int shouldIgnoreCase)
+int mmpadDetector::stringEndsWith(const char *aString, const char *aSubstring, int shouldIgnoreCase)
 {
     int i, j;
 
@@ -470,7 +477,7 @@ int pilatusDetector::stringEndsWith(const char *aString, const char *aSubstring,
  * sure that the creation time of the file is after a start time passed to it, to force
  * it to wait for a new file to be created.
  */
-asynStatus pilatusDetector::readImageFile(const char *fileName, epicsTimeStamp *pStartTime, double timeout, NDArray *pImage)
+asynStatus mmpadDetector::readImageFile(const char *fileName, epicsTimeStamp *pStartTime, double timeout, NDArray *pImage)
 {
     const char *functionName = "readImageFile";
 
@@ -492,7 +499,7 @@ asynStatus pilatusDetector::readImageFile(const char *fileName, epicsTimeStamp *
  * the creation time of the file is after a start time passed to it, to force it to wait
  * for a new file to be created.
  */
-asynStatus pilatusDetector::readCbf(const char *fileName, epicsTimeStamp *pStartTime, double timeout, NDArray *pImage)
+asynStatus mmpadDetector::readCbf(const char *fileName, epicsTimeStamp *pStartTime, double timeout, NDArray *pImage)
 {
     epicsTimeStamp tStart, tCheck;
     double deltaTime;
@@ -632,7 +639,7 @@ asynStatus pilatusDetector::readCbf(const char *fileName, epicsTimeStamp *pStart
  * that the creation time of the file is after a start time passed to it, to force it to
  * wait for a new file to be created.
  */
-asynStatus pilatusDetector::readTiff(const char *fileName, epicsTimeStamp *pStartTime, double timeout, NDArray *pImage)
+asynStatus mmpadDetector::readTiff(const char *fileName, epicsTimeStamp *pStartTime, double timeout, NDArray *pImage)
 {
     epicsTimeStamp tStart, tCheck;
     double deltaTime;
@@ -743,7 +750,7 @@ asynStatus pilatusDetector::readTiff(const char *fileName, epicsTimeStamp *pStar
     return(asynSuccess);
 }   
 
-asynStatus pilatusDetector::setAcquireParams()
+asynStatus mmpadDetector::setAcquireParams()
 {
     int ival;
     double dval;
@@ -828,7 +835,7 @@ asynStatus pilatusDetector::setAcquireParams()
 
 }
 
-asynStatus pilatusDetector::setThreshold()
+asynStatus mmpadDetector::setThreshold()
 {
     int igain, status;
     double threshold, dgain, energy;
@@ -888,7 +895,7 @@ asynStatus pilatusDetector::setThreshold()
     return(asynSuccess);
 }
 
-asynStatus pilatusDetector::resetModulePower()
+asynStatus mmpadDetector::resetModulePower()
 {
     int resetTime;
     static const char *functionName="resetModulePower";
@@ -910,7 +917,7 @@ asynStatus pilatusDetector::resetModulePower()
     return asynSuccess;
 }
 
-asynStatus pilatusDetector::writeCamserver(double timeout)
+asynStatus mmpadDetector::writeCamserver(double timeout)
 {
     size_t nwrite;
     asynStatus status;
@@ -933,7 +940,7 @@ asynStatus pilatusDetector::writeCamserver(double timeout)
 }
 
 
-asynStatus pilatusDetector::readCamserver(double timeout)
+asynStatus mmpadDetector::readCamserver(double timeout)
 {
     size_t nread;
     asynStatus status=asynSuccess;
@@ -1001,7 +1008,7 @@ asynStatus pilatusDetector::readCamserver(double timeout)
     return(status);
 }
 
-asynStatus pilatusDetector::writeReadCamserver(double timeout)
+asynStatus mmpadDetector::writeReadCamserver(double timeout)
 {
     asynStatus status;
     
@@ -1013,14 +1020,14 @@ asynStatus pilatusDetector::writeReadCamserver(double timeout)
 
 static void pilatusTaskC(void *drvPvt)
 {
-    pilatusDetector *pPvt = (pilatusDetector *)drvPvt;
+    mmpadDetector *pPvt = (mmpadDetector *)drvPvt;
     
     pPvt->pilatusTask();
 }
 
 /** This thread controls acquisition, reads image files to get the image data, and
   * does the callbacks to send it to higher layers */
-void pilatusDetector::pilatusTask()
+void mmpadDetector::pilatusTask()
 {
     int status = asynSuccess;
     int imageCounter;
@@ -1300,7 +1307,7 @@ void pilatusDetector::pilatusTask()
 
 /** This function is called periodically read the detector status (temperature, humidity, etc.)
     It should not be called if we are acquiring data, to avoid polling camserver when taking data.*/
-asynStatus pilatusDetector::pilatusStatus()
+asynStatus mmpadDetector::pilatusStatus()
 {
   asynStatus status = asynSuccess;
   float temp = 0.0;
@@ -1374,7 +1381,7 @@ asynStatus pilatusDetector::pilatusStatus()
   * For all parameters it sets the value in the parameter library and calls any registered callbacks..
   * \param[in] pasynUser pasynUser structure that encodes the reason and address.
   * \param[in] value Value to write. */
-asynStatus pilatusDetector::writeInt32(asynUser *pasynUser, epicsInt32 value)
+asynStatus mmpadDetector::writeInt32(asynUser *pasynUser, epicsInt32 value)
 {
     int function = pasynUser->reason;
     int adstatus;
@@ -1454,7 +1461,7 @@ asynStatus pilatusDetector::writeInt32(asynUser *pasynUser, epicsInt32 value)
   * For all parameters it sets the value in the parameter library and calls any registered callbacks..
   * \param[in] pasynUser pasynUser structure that encodes the reason and address.
   * \param[in] value Value to write. */
-asynStatus pilatusDetector::writeFloat64(asynUser *pasynUser, epicsFloat64 value)
+asynStatus mmpadDetector::writeFloat64(asynUser *pasynUser, epicsFloat64 value)
 {
     int function = pasynUser->reason;
     asynStatus status = asynSuccess;
@@ -1594,7 +1601,7 @@ asynStatus pilatusDetector::writeFloat64(asynUser *pasynUser, epicsFloat64 value
   * \param[in] value Address of the string to write.
   * \param[in] nChars Number of characters to write.
   * \param[out] nActual Number of characters actually written. */
-asynStatus pilatusDetector::writeOctet(asynUser *pasynUser, const char *value, 
+asynStatus mmpadDetector::writeOctet(asynUser *pasynUser, const char *value, 
                                     size_t nChars, size_t *nActual)
 {
     int function = pasynUser->reason;
@@ -1648,7 +1655,7 @@ asynStatus pilatusDetector::writeOctet(asynUser *pasynUser, const char *value,
   * \param[in] fp File pointed passed by caller where the output is written to.
   * \param[in] details If >0 then driver details are printed.
   */
-void pilatusDetector::report(FILE *fp, int details)
+void mmpadDetector::report(FILE *fp, int details)
 {
 
     fprintf(fp, "Pilatus detector %s\n", this->portName);
@@ -1664,12 +1671,12 @@ void pilatusDetector::report(FILE *fp, int details)
     ADDriver::report(fp, details);
 }
 
-extern "C" int pilatusDetectorConfig(const char *portName, const char *camserverPort, 
+extern "C" int mmpadDetectorConfig(const char *portName, const char *camserverPort, 
                                     int maxSizeX, int maxSizeY,
                                     int maxBuffers, size_t maxMemory,
                                     int priority, int stackSize)
 {
-    new pilatusDetector(portName, camserverPort, maxSizeX, maxSizeY, maxBuffers, maxMemory,
+    new mmpadDetector(portName, camserverPort, maxSizeX, maxSizeY, maxBuffers, maxMemory,
                         priority, stackSize);
     return(asynSuccess);
 }
@@ -1689,7 +1696,7 @@ extern "C" int pilatusDetectorConfig(const char *portName, const char *camserver
   * \param[in] priority The thread priority for the asyn port driver thread if ASYN_CANBLOCK is set in asynFlags.
   * \param[in] stackSize The stack size for the asyn port driver thread if ASYN_CANBLOCK is set in asynFlags.
   */
-pilatusDetector::pilatusDetector(const char *portName, const char *camserverPort,
+mmpadDetector::mmpadDetector(const char *portName, const char *camserverPort,
                                 int maxSizeX, int maxSizeY,
                                 int maxBuffers, size_t maxMemory,
                                 int priority, int stackSize)
@@ -1703,7 +1710,7 @@ pilatusDetector::pilatusDetector(const char *portName, const char *camserverPort
 {
     int status = asynSuccess;
     char versionString[20];
-    const char *functionName = "pilatusDetector";
+    const char *functionName = "mmpadDetector";
     size_t dims[2];
 
     /* Create the epicsEvents for signaling to the pilatus task when acquisition starts and stops */
@@ -1839,37 +1846,37 @@ pilatusDetector::pilatusDetector(const char *portName, const char *camserverPort
 }
 
 /* Code for iocsh registration */
-static const iocshArg pilatusDetectorConfigArg0 = {"Port name", iocshArgString};
-static const iocshArg pilatusDetectorConfigArg1 = {"camserver port name", iocshArgString};
-static const iocshArg pilatusDetectorConfigArg2 = {"maxSizeX", iocshArgInt};
-static const iocshArg pilatusDetectorConfigArg3 = {"maxSizeY", iocshArgInt};
-static const iocshArg pilatusDetectorConfigArg4 = {"maxBuffers", iocshArgInt};
-static const iocshArg pilatusDetectorConfigArg5 = {"maxMemory", iocshArgInt};
-static const iocshArg pilatusDetectorConfigArg6 = {"priority", iocshArgInt};
-static const iocshArg pilatusDetectorConfigArg7 = {"stackSize", iocshArgInt};
-static const iocshArg * const pilatusDetectorConfigArgs[] =  {&pilatusDetectorConfigArg0,
-                                                              &pilatusDetectorConfigArg1,
-                                                              &pilatusDetectorConfigArg2,
-                                                              &pilatusDetectorConfigArg3,
-                                                              &pilatusDetectorConfigArg4,
-                                                              &pilatusDetectorConfigArg5,
-                                                              &pilatusDetectorConfigArg6,
-                                                              &pilatusDetectorConfigArg7};
-static const iocshFuncDef configPilatusDetector = {"pilatusDetectorConfig", 8, pilatusDetectorConfigArgs};
+static const iocshArg mmpadDetectorConfigArg0 = {"Port name", iocshArgString};
+static const iocshArg mmpadDetectorConfigArg1 = {"camserver port name", iocshArgString};
+static const iocshArg mmpadDetectorConfigArg2 = {"maxSizeX", iocshArgInt};
+static const iocshArg mmpadDetectorConfigArg3 = {"maxSizeY", iocshArgInt};
+static const iocshArg mmpadDetectorConfigArg4 = {"maxBuffers", iocshArgInt};
+static const iocshArg mmpadDetectorConfigArg5 = {"maxMemory", iocshArgInt};
+static const iocshArg mmpadDetectorConfigArg6 = {"priority", iocshArgInt};
+static const iocshArg mmpadDetectorConfigArg7 = {"stackSize", iocshArgInt};
+static const iocshArg * const mmpadDetectorConfigArgs[] =  {&mmpadDetectorConfigArg0,
+                                                              &mmpadDetectorConfigArg1,
+                                                              &mmpadDetectorConfigArg2,
+                                                              &mmpadDetectorConfigArg3,
+                                                              &mmpadDetectorConfigArg4,
+                                                              &mmpadDetectorConfigArg5,
+                                                              &mmpadDetectorConfigArg6,
+                                                              &mmpadDetectorConfigArg7};
+static const iocshFuncDef configPilatusDetector = {"mmpadDetectorConfig", 8, mmpadDetectorConfigArgs};
 static void configPilatusDetectorCallFunc(const iocshArgBuf *args)
 {
-    pilatusDetectorConfig(args[0].sval, args[1].sval, args[2].ival,  args[3].ival,  
+    mmpadDetectorConfig(args[0].sval, args[1].sval, args[2].ival,  args[3].ival,  
                           args[4].ival, args[5].ival, args[6].ival,  args[7].ival);
 }
 
 
-static void pilatusDetectorRegister(void)
+static void mmpadDetectorRegister(void)
 {
 
     iocshRegister(&configPilatusDetector, configPilatusDetectorCallFunc);
 }
 
 extern "C" {
-epicsExportRegistrar(pilatusDetectorRegister);
+epicsExportRegistrar(mmpadDetectorRegister);
 }
 
