@@ -1712,6 +1712,7 @@ mmpadDetector::mmpadDetector(const char *portName, const char *camserverPort,
     char versionString[20];
     const char *functionName = "mmpadDetector";
     size_t dims[2];
+    STServerInfo serverPattern = ST_INTERFACE::StServers::getServerTemplate("","","",""); //-=-= NOTE Dummy argument at present.
 
     /* Create the epicsEvents for signaling to the pilatus task when acquisition starts and stops */
     this->startEventId = epicsEventCreate(epicsEventEmpty);
@@ -1736,6 +1737,12 @@ mmpadDetector::mmpadDetector(const char *portName, const char *camserverPort,
     /* Connect to camserver */
     status = pasynOctetSyncIO->connect(camserverPort, 0, &this->pasynUserCamserver, NULL);
 
+    // Populate the server list.
+    mServers.locateServers(serverPattern);
+    printf("Ran locateServers.\n");
+    fflush(stdout);
+    
+    
     createParam(PilatusDelayTimeString,      asynParamFloat64, &PilatusDelayTime);
     createParam(PilatusThresholdString,      asynParamFloat64, &PilatusThreshold);
     createParam(PilatusThresholdApplyString, asynParamInt32,   &PilatusThresholdApply);
@@ -1824,7 +1831,7 @@ mmpadDetector::mmpadDetector(const char *portName, const char *camserverPort,
         printf("%s: unable to set camera parameters\n", functionName);
         return;
     }
-    
+
     /* Create the thread that updates the images */
     status = (epicsThreadCreate("PilatusDetTask",
                                 epicsThreadPriorityMedium,
@@ -1862,8 +1869,8 @@ static const iocshArg * const mmpadDetectorConfigArgs[] =  {&mmpadDetectorConfig
                                                               &mmpadDetectorConfigArg5,
                                                               &mmpadDetectorConfigArg6,
                                                               &mmpadDetectorConfigArg7};
-static const iocshFuncDef configPilatusDetector = {"mmpadDetectorConfig", 8, mmpadDetectorConfigArgs};
-static void configPilatusDetectorCallFunc(const iocshArgBuf *args)
+static const iocshFuncDef configMMPADDetector = {"mmpadDetectorConfig", 8, mmpadDetectorConfigArgs};
+static void configMMPADDetectorCallFunc(const iocshArgBuf *args)
 {
     mmpadDetectorConfig(args[0].sval, args[1].sval, args[2].ival,  args[3].ival,  
                           args[4].ival, args[5].ival, args[6].ival,  args[7].ival);
@@ -1873,7 +1880,7 @@ static void configPilatusDetectorCallFunc(const iocshArgBuf *args)
 static void mmpadDetectorRegister(void)
 {
 
-    iocshRegister(&configPilatusDetector, configPilatusDetectorCallFunc);
+    iocshRegister(&configMMPADDetector, configMMPADDetectorCallFunc);
 }
 
 extern "C" {

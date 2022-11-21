@@ -1,8 +1,8 @@
 < envPaths
 errlogInit(20000)
 
-dbLoadDatabase("$(TOP)/dbd/pilatusDetectorApp.dbd")
-pilatusDetectorApp_registerRecordDeviceDriver(pdbbase) 
+dbLoadDatabase("$(TOP)/dbd/mmpadDetectorApp.dbd")
+mmpadDetectorApp_registerRecordDeviceDriver(pdbbase) 
 
 # Prefix for all records
 epicsEnvSet("PREFIX", "13PIL1:")
@@ -23,16 +23,17 @@ epicsEnvSet("EPICS_DB_INCLUDE_PATH", "$(ADCORE)/db")
 
 ###
 # Create the asyn port to talk to the Pilatus on port 41234.
-drvAsynIPPortConfigure("camserver","gse-pilatus1:41234")
+drvAsynIPPortConfigure("camserver","127.0.0.1:41234")
 # Uncomment the following to enable asynTrace on the camserver port
 #asynSetTraceIOMask("camserver",0,2)
 #asynSetTraceMask("camserver",0,9)
 # Set the input and output terminators.
-asynOctetSetInputEos("camserver", 0, "\030")
+#asynOctetSetInputEos("camserver", 0, "\030")
+asynOctetSetInputEos("camserver", 0, "\x18")
 asynOctetSetOutputEos("camserver", 0, "\n")
 
-pilatusDetectorConfig("$(PORT)", "camserver", $(XSIZE), $(YSIZE), 0, 0)
-dbLoadRecords("$(ADPILATUS)/db/pilatus.template","P=$(PREFIX),R=cam1:,PORT=$(PORT),ADDR=0,TIMEOUT=1,CAMSERVER_PORT=camserver")
+mmpadDetectorConfig("$(PORT)", "camserver", $(XSIZE), $(YSIZE), 0, 0)
+dbLoadRecords("$(ADMMPAD)/db/mmpad.template","P=$(PREFIX),R=cam1:,PORT=$(PORT),ADDR=0,TIMEOUT=1,CAMSERVER_PORT=camserver")
 
 # Create a standard arrays plugin
 NDStdArraysConfigure("Image1", 5, 0, "$(PORT)", 0, 0)
@@ -40,7 +41,7 @@ dbLoadRecords("$(ADCORE)/db/NDStdArrays.template", "P=$(PREFIX),R=image1:,PORT=I
 
 # Load all other plugins using commonPlugins.cmd
 < $(ADCORE)/iocBoot/commonPlugins.cmd
-set_requestfile_path("$(ADPILATUS)/pilatusApp/Db")
+set_requestfile_path("$(ADMMPAD)/mmpadApp/Db")
 
 # Uncomment to enable asynTrace on the driver port
 #asynSetTraceMask("$(PORT)",0,255)
