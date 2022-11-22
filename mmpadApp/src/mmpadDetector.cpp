@@ -40,6 +40,7 @@
 
 #include "st_servers.h"
 #include "st_if_defs.h"
+#include "st_client_interface.h"
 
 #define DRIVER_VERSION      2
 #define DRIVER_REVISION     9
@@ -236,6 +237,7 @@ protected:
 
     // MMPAD Interface
     ST_INTERFACE::StServers mServers; ///< MMPAD Server management class
+    ST_INTERFACE::StClientInterface *mLocalServer; ///< Localhost server
     
 };
 
@@ -1508,7 +1510,12 @@ asynStatus mmpadDetector::writeFloat64(asynUser *pasynUser, epicsFloat64 value)
     } else if ((function == ADAcquireTime) ||
                (function == ADAcquirePeriod) ||
                (function == PilatusDelayTime)) {
-        setAcquireParams();
+        //-=-= XXX Old code; try new function setAcquireParams();
+        uint32_t usecTime = value;
+        int32_t rtn;
+        rtn = mLocalServer->setParam<uint32_t>(INTEGRATION_USEC_PARAM, usecTime);
+        printf("USec Time Return: %i\n",rtn);
+        fflush(stdout);
     } else if (function == PilatusWavelength) {
         epicsSnprintf(this->toCamserver, sizeof(this->toCamserver), "mxsettings Wavelength %f", value);
         writeReadCamserver(CAMSERVER_DEFAULT_TIMEOUT);
@@ -1713,6 +1720,9 @@ mmpadDetector::mmpadDetector(const char *portName, const char *camserverPort,
     const char *functionName = "mmpadDetector";
     size_t dims[2];
     STServerInfo serverPattern = ST_INTERFACE::StServers::getServerTemplate("","","",""); //-=-= NOTE Dummy argument at present.
+    std::vector<STServerInfo> serverList;
+    uint32_t numServers;
+    int32_t ret;
 
     /* Create the epicsEvents for signaling to the pilatus task when acquisition starts and stops */
     this->startEventId = epicsEventCreate(epicsEventEmpty);
@@ -1739,7 +1749,16 @@ mmpadDetector::mmpadDetector(const char *portName, const char *camserverPort,
 
     // Populate the server list.
     mServers.locateServers(serverPattern);
-    printf("Ran locateServers.\n");
+    numServers = mServers.getServerList(serverList);
+    printf("Ran locateServers and found %u.\n", numServers);
+    //-=-= TODO Set up as proper uint versus int 
+    for (int serverIdx = 0; serverIdx < numServers; serverIdx++)
+    {
+        printf("Server %i: %s\n", serverIdx+1, serverList[serverIdx].name);
+    }
+    mLocalServer = new ST_INTERFACE::StClientInterface(serverList[2]);
+    ret = mLocalServer->openConnection();
+    printf("Server connect return: %i\n", ret);
     fflush(stdout);
     
     
