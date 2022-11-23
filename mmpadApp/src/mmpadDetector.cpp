@@ -60,6 +60,10 @@
 /** Time between checking to see if image file is complete */
 #define FILE_READ_DELAY .01
 
+/** Image sizes parameterized to accommodate potential MegaPAD later */
+#define MAX_WIDTH 512
+#define MAX_HEIGHT 512 
+
 /** Trigger modes */
 typedef enum {
     TMInternal,
@@ -222,6 +226,7 @@ protected:
     asynStatus pilatusStatus();
     void readBadPixelFile(const char *badPixelFile);
     void readFlatFieldFile(const char *flatFieldFile);
+    asynStatus readRawFrame(FILE *imgFile); // -=-= TODO A candidate to put in an NDArray like readTiff() above
    
     /* Our data */
     int imagesRemaining;
@@ -239,6 +244,11 @@ protected:
     double demandedEnergy;
     int firstStatusCall;
     double camserverVersion;
+    uint32_t mImageBuffer[MAX_HEIGHT][MAX_WIDTH]; ///< Where the read in image is stored
+    
+    FILE *mCurrImageFile; ///< Image file we are currently reading images from
+    const long MMPAD_HEADER_BYTES = 256; // -=-= XXX This could change with future rtsup revisions
+    const long MMPAD_FOOTER_BYTES = 2048-256; // -=-= XXX ibid
 
     // MMPAD Interface
     ST_INTERFACE::StServers mServers; ///< MMPAD Server management class
@@ -1312,6 +1322,38 @@ void mmpadDetector::pilatusTask()
     }
 }
 
+/** This function will read one frame from a specified file.  It will advance the file pointer past the footer on an image */
+asynStatus mmpadDetector::readRawFrame(FILE *imageFile)
+{
+    int rtn;
+    size_t read_size;
+
+    // Advance past the header
+    rtn = fseek(imageFile, MMPAD_HEADER_BYTES, SEEK_CUR);
+    if (rtn)
+    {
+        return asynError;       // Something bad happend
+    }
+
+    //-=-= XXX This assumes a little-endian machine
+    read_size = fread(mImageBuffer, sizeof(uint32_t), MAX_HEIGHT * MAX_WIDTH, imageFile); // Read the actual data
+
+    if (read_size < (MAX_HEIGHT * MAX_WIDTH)) // Didn't read all the data
+    {
+        return asynOverflow;
+    }
+
+    // Skip the footer
+    rtn = fseek(imageFile, MMPAD_FOOTER_BYTES, SEEK_CUR);
+    if (rtn)
+    {
+        return asynError;       // Something bad happened
+    }
+
+    return asynSuccess;
+}
+
+
 /** This function is called periodically read the detector status (temperature, humidity, etc.)
     It should not be called if we are acquiring data, to avoid polling camserver when taking data.*/
 asynStatus mmpadDetector::pilatusStatus()
@@ -1803,7 +1845,7 @@ mmpadDetector::mmpadDetector(const char *portName, const char *camserverPort,
     numServers = mServers.getServerList(serverList);
     printf("Ran locateServers and found %u.\n", numServers);
     //-=-= TODO Set up as proper uint versus int 
-    for (int serverIdx = 0; serverIdx < numServers; serverIdx++)
+    for (uint32_t serverIdx = 0; serverIdx < numServers; serverIdx++)
     {
         printf("Server %i: %s\n", serverIdx+1, serverList[serverIdx].name);
     }
