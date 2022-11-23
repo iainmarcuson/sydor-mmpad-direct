@@ -1,6 +1,6 @@
 epicsEnvSet("IOC","iocMMPAD")
 epicsEnvSet("TOP","/home/iainm/src/epics/synApps2/support/areaDetector/ADMMPADDirect/iocs/mmpadIOC")
-epicsEnvSet("ADPILATUS","/home/iainm/src/epics/synApps2/support/areaDetector/ADMMPADDirect/iocs/mmpadIOC/../..")
+epicsEnvSet("ADMMPAD","/home/iainm/src/epics/synApps2/support/areaDetector/ADMMPADDirect/iocs/mmpadIOC/../..")
 epicsEnvSet("SUPPORT","/home/iainm/src/epics/synApps2/support")
 epicsEnvSet("ASYN","/home/iainm/src/epics/synApps2/support/asyn")
 epicsEnvSet("AREA_DETECTOR","/home/iainm/src/epics/synApps2/support/areaDetector")
