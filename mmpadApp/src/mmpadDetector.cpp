@@ -129,6 +129,8 @@ static const char *driverName = "mmpadDetector";
 #define PilatusCbfTemplateFileString "CBFTEMPLATEFILE"
 #define PilatusHeaderStringString   "HEADERSTRING"
 
+#define MMPADRunNameString          "RUNNAME"
+#define MMPADSetNameString          "SETNAME"
 
 /** Driver for Dectris Pilatus pixel array detectors using their camserver server over TCP/IP socket */
 class mmpadDetector : public ADDriver {
@@ -197,6 +199,9 @@ protected:
     int PilatusTvxVersion;
     int PilatusCbfTemplateFile;
     int PilatusHeaderString;
+
+    int MMPADRunName;
+    int MMPADSetName;
 
  private:                                       
     /* These are the methods that are new to this class */
@@ -1393,6 +1398,7 @@ asynStatus mmpadDetector::writeInt32(asynUser *pasynUser, epicsInt32 value)
     /* Ensure that ADStatus is set correctly before we set ADAcquire.*/
     getIntegerParam(ADStatus, &adstatus);
     if (function == ADAcquire) {
+        /*
       if (value && ((adstatus == ADStatusIdle) || adstatus == ADStatusError || adstatus == ADStatusAborted)) {
         setStringParam(ADStatusMessage, "Acquiring data");
         setIntegerParam(ADStatus, ADStatusAcquire);
@@ -1400,7 +1406,26 @@ asynStatus mmpadDetector::writeInt32(asynUser *pasynUser, epicsInt32 value)
       if (!value && (adstatus == ADStatusAcquire)) {
         setStringParam(ADStatusMessage, "Acquisition aborted");
         setIntegerParam(ADStatus, ADStatusAborted);
-      }
+        }*/
+        if (value)
+        {
+            char runName[100];
+            int32_t rtn;
+            std::string id;
+            
+            runName[99] = '\0';
+            getStringParam(MMPADRunName, 99, runName);
+            rtn = mLocalServer->startCaptureRun(runName, id, 0);
+            printf("Acquire return: %i\tID: %s\n", rtn, id.c_str());
+            //-=-= May be active low in some cases
+            mLocalServer->setParam<double>("SW_Trigger", 1);
+            epicsThreadSleep(0.001);
+            mLocalServer->setParam<double>("SW_Trigger", 0);
+        }
+        else
+        {
+            // Nothing to do for setting to 0
+        }
     }
     callParamCallbacks();
 
@@ -1422,11 +1447,22 @@ asynStatus mmpadDetector::writeInt32(asynUser *pasynUser, epicsInt32 value)
             epicsThreadSleep(2);
             setStringParam(ADStatusMessage, "Acquisition aborted");
         }
-    } else if ((function == ADTriggerMode) ||
-               (function == ADNumImages) ||
-               (function == ADNumExposures) ||
-               (function == PilatusGapFill)) {
-        setAcquireParams();
+    } else if (function == ADTriggerMode)
+    {
+        int32_t rtn;
+        printf("Trigger Value being set is %i.\n", value);
+        rtn = mLocalServer->setParam<uint32_t>(TRIGGER_MODE_PARAM, value);
+        printf("Trigger set return value is %i.\n", rtn);
+        fflush(stdout);
+        //-=-= XXX Old code setAcquireParams();
+    } else if (function == ADNumImages)
+    {
+        int32_t rtn;
+        rtn = mLocalServer->setParam<uint32_t>(FRAME_COUNT_PARAM, value);
+    } else if (function == ADNumExposures)
+    {
+        int32_t rtn;
+        rtn = mLocalServer->setParam<uint32_t>(IMAGE_COUNT_PARAM, value);
     } else if (function == PilatusThresholdApply) {
         setThreshold();
     } else if (function == PilatusResetPower) {
@@ -1508,13 +1544,20 @@ asynStatus mmpadDetector::writeFloat64(asynUser *pasynUser, epicsFloat64 value)
           }
         }
     } else if ((function == ADAcquireTime) ||
-               (function == ADAcquirePeriod) ||
                (function == PilatusDelayTime)) {
         //-=-= XXX Old code; try new function setAcquireParams();
+        //-=-= TODO FIXME Set status to see if there is an error
         uint32_t usecTime = value;
         int32_t rtn;
         rtn = mLocalServer->setParam<uint32_t>(INTEGRATION_USEC_PARAM, usecTime);
-        printf("USec Time Return: %i\n",rtn);
+        printf("Integration Time Return: %i\n", rtn);
+        fflush(stdout);
+    } else if (function == ADAcquirePeriod)
+    {
+        uint32_t usecTime = value;
+        int32_t rtn;
+        rtn = mLocalServer->setParam<uint32_t>(INTERFRAME_USEC_PARAM, usecTime);
+        printf("Interframe Time Return: %i\n", rtn);
         fflush(stdout);
     } else if (function == PilatusWavelength) {
         epicsSnprintf(this->toCamserver, sizeof(this->toCamserver), "mxsettings Wavelength %f", value);
@@ -1634,6 +1677,14 @@ asynStatus mmpadDetector::writeOctet(asynUser *pasynUser, const char *value,
         epicsSnprintf(this->toCamserver, sizeof(this->toCamserver), "mxsettings cbf_template_file %s",
             strlen(value) == 0 ? "0" : value);
         writeReadCamserver(CAMSERVER_DEFAULT_TIMEOUT);
+    } else if (function == MMPADRunName)
+    {
+        int32_t rtn;
+        //-=-= FIXME with proper command rtn = mLocalServer->setParam<const char *>(ST_STR_RUN_NAME, value);
+    } else if (function == MMPADSetName)
+    {
+        int32_t rtn;
+        //-=-= FIXME with proper command rtn = mLocalServer->setParam<const char *>(ST_STR_SET_NAME, value);
     } else {
         /* If this parameter belongs to a base class call its method */
         if (function < FIRST_PILATUS_PARAM) status = ADDriver::writeOctet(pasynUser, value, nChars, nActual);
@@ -1810,6 +1861,8 @@ mmpadDetector::mmpadDetector(const char *portName, const char *camserverPort,
     createParam(PilatusTvxVersionString,     asynParamOctet,   &PilatusTvxVersion);
     createParam(PilatusCbfTemplateFileString,asynParamOctet,   &PilatusCbfTemplateFile);
     createParam(PilatusHeaderStringString,   asynParamOctet,   &PilatusHeaderString);
+    createParam(MMPADRunNameString,          asynParamOctet,   &MMPADRunName);
+    createParam(MMPADSetNameString,          asynParamOctet,   &MMPADSetName);
 
     /* Set some default values for parameters */
     status =  setStringParam (ADManufacturer, "Dectris");

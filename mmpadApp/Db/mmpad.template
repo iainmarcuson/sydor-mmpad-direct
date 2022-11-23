@@ -9,29 +9,17 @@ include "NDFile.template"
 record(mbbo,"$(P)$(R)TriggerMode") {
     field(DESC,"Acquire mode")
     field(ZRVL,"0")
-    field(ZRST,"Internal")
-    field(ONVL,"1")
-    field(ONST,"Ext. Enable")
-    field(TWVL,"2")
-    field(TWST,"Ext. Trigger")
-    field(THVL,"3")
-    field(THST,"Mult. Trigger")
-    field(FRVL,"4")
-    field(FRST,"Alignment")
+    field(ZRST,"Software")
+    field(ONVL,"2")
+    field(ONST,"Hardware")
 }
 
 record(mbbi,"$(P)$(R)TriggerMode_RBV") {
     field(DESC,"Acquire mode")
     field(ZRVL,"0")
-    field(ZRST,"Internal")
-    field(ONVL,"1")
-    field(ONST,"Ext. Enable")
-    field(TWVL,"2")
-    field(TWST,"Ext. Trigger")
-    field(THVL,"3")
-    field(THST,"Mult. Trigger")
-    field(FRVL,"4")
-    field(FRST,"Alignment")
+    field(ZRST,"Software")
+    field(ONVL,"2")
+    field(ONST,"Hardware")
 }
 
 # We redefine the states for the FileFormat records defined in NDFile.template
@@ -717,3 +705,26 @@ record(waveform, "$(P)$(R)HeaderString")
     field(NELM, "68")
 }
 
+record(longout, "$(P)$(R)NumExposures")
+{
+    field(VAL, "1")
+    field(PINI, "YES")
+}
+
+record(waveform, "$(P)$(R)RunName")
+{
+    field(PINI, "NO")
+    field(DTYP, "asynOctetWrite")
+    field(INP,  "@asyn($(PORT),$(ADDR),$(TIMEOUT))RUNNAME")
+    field(FTVL, "CHAR")
+    field(NELM, "64")
+}
+
+record(waveform, "$(P)$(R)SetName")
+{
+    field(PINI, "NO")
+    field(DTYP, "asynOctetWrite")
+    field(INP,  "@asyn($(PORT),$(ADDR),$(TIMEOUT))SETNAME")
+    field(FTVL, "CHAR")
+    field(NELM, "64")
+}
