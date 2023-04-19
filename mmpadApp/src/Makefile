@@ -7,7 +7,7 @@ LIBRARY_IOC_Linux = mmpadDetector
 LIBRARY_IOC_Darwin = mmpadDetector
 
 USR_CXXFLAGS += -g -ggdb
-USR_INCLUDES += -I$(TOP)/mmpadApp/cbfSrc -I/home/iainm/work/mmpad/mm-pad-client-cmdline/mm-pad-interface/include -I/home/iainm/work/mmpad/mm-pad-client-cmdline/stutil/include -I/home/iainm/work/mmpad/mm-pad-client-cmdline/mm-pad-interface/thirdparty/include
+USR_INCLUDES += -I$(TOP)/mmpadApp/cbfSrc -I../mm-pad-interface/include -I../stutil/include -I../mm-pad-interface/thirdparty/include
 
 LIB_SRCS += mmpadDetector.cpp
 
