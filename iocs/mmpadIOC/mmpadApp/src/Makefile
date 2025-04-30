@@ -17,7 +17,7 @@ PROD_SRCS += $(PROD_NAME)_registerRecordDeviceDriver.cpp $(PROD_NAME)Main.cpp
 # Add locally compiled object code
 PROD_LIBS += mmpadDetector
 PROD_LIBS += cbfad
-PROD_LDFLAGS += -L/home/iainm/work/mmpad/mm-pad-client-cmdline/mm-pad-interface/lib/debug -L/home/iainm/work/mmpad/mm-pad-client-cmdline/stutil/lib/debug
+PROD_LDFLAGS += -L/home/iainm/work/xpad/mm-pad-client-cmdline/mm-pad-interface/lib/debug -L/home/iainm/work/xpad/mm-pad-client-cmdline/stutil/lib/debug
 PROD_SYS_LIBS += st_if_client st_if_common stutil stdatastore zmq
 
 include $(ADCORE)/ADApp/commonDriverMakefile

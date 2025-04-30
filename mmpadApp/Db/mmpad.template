@@ -728,3 +728,16 @@ record(waveform, "$(P)$(R)SetName")
     field(FTVL, "CHAR")
     field(NELM, "64")
 }
+
+record(longout, "$(P)$(R)PADStatus")
+{
+    field(PINI, "NO")
+    field(DTYP, "asynInt32")
+    field(OUT, "@asyn($(PORT),$(ADDR),$(TIMEOUT))PADSTATUS")
+}
+
+record(longin, "$(P)$(R)PADStatus_RBV")
+{
+    field(DTYP, "asynInt32")
+    field(INP, "@asyn($(PORT),$(ADDR),$(TIMEOUT))PADSTATUS")
+}

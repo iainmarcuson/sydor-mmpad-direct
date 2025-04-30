@@ -136,6 +136,7 @@ static const char *driverName = "mmpadDetector";
 #define MMPADRunNameString          "RUNNAME"
 #define MMPADSetNameString          "SETNAME"
 
+#define MMPADPADStatusString        "PADSTATUS"
 /** Driver for Dectris Pilatus pixel array detectors using their camserver server over TCP/IP socket */
 class mmpadDetector : public ADDriver {
 public:
@@ -206,7 +207,7 @@ protected:
 
     int MMPADRunName;
     int MMPADSetName;
-
+    int MMPADPADStatus;
  private:                                       
     /* These are the methods that are new to this class */
     void abortAcquisition();
@@ -1505,6 +1506,13 @@ asynStatus mmpadDetector::writeInt32(asynUser *pasynUser, epicsInt32 value)
     {
         int32_t rtn;
         rtn = mLocalServer->setParam<uint32_t>(IMAGE_COUNT_PARAM, value);
+    } else if (function == MMPADPADStatus)
+    {
+        int32_t rtn;
+        double humidity_rbv;
+        
+        rtn = mLocalServer->getParam<double>("humidity", humidity_rbv, 0);
+        setDoubleParam(PilatusThHumid0, humidity_rbv);
     } else if (function == PilatusThresholdApply) {
         setThreshold();
     } else if (function == PilatusResetPower) {
@@ -1905,7 +1913,8 @@ mmpadDetector::mmpadDetector(const char *portName, const char *camserverPort,
     createParam(PilatusHeaderStringString,   asynParamOctet,   &PilatusHeaderString);
     createParam(MMPADRunNameString,          asynParamOctet,   &MMPADRunName);
     createParam(MMPADSetNameString,          asynParamOctet,   &MMPADSetName);
-
+    createParam(MMPADPADStatusString,        asynParamInt32,   &MMPADPADStatus);
+    
     /* Set some default values for parameters */
     status =  setStringParam (ADManufacturer, "Dectris");
     status |= setStringParam (ADModel, "Pilatus");
