@@ -184,6 +184,11 @@ public:
                                    const std::string& tags) = 0;
 
     //-----------------------------------------------
+    /// Get serial number
+    /// @return Serial number
+    virtual int32_t getSerialNumber(void) = 0;
+    
+    //-----------------------------------------------
     /// Enable background subtraction
     ///
     /// @param[in] bEnable   Enable or disable BG sub
@@ -203,6 +208,27 @@ public:
     virtual int32_t batchCorrectRun(const std::string setName,
         const std::string runName) = 0;
 
+    //----------------------------------------------
+    /// Retrieve the post-processing options string
+    ///
+    /// @return The string
+    ///
+    virtual std::string getPostOptsStr(void) = 0;
+
+    //----------------------------------------------
+    /// Update the post-processing options
+    ///
+    /// @return 0 if ok, negative error code otherwise
+    ///
+    virtual int32_t updatePostOpts(const std::string &opts) = 0;
+
+    //----------------------------------------------
+    /// Get the number of heads
+    ///
+    /// @return Number of heads in system
+    ///
+    virtual uint32_t getNumHeads() = 0;
+    
     //----------------------------------------------
     /// Calculate a background image
     ///

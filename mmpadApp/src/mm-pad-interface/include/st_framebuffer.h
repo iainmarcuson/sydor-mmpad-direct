@@ -38,6 +38,21 @@ namespace ST_INTERFACE
 #define ST_FRAME_OVERLAY_GRID            1   ///< Gridlines
 #define ST_FRAME_OVERLAY_BOUNCING_BALL   2   ///< Bouncing ball
 
+/// Post-processing values
+///
+#define ST_DEBOUNCE_METHOD_NONE         -1   ///< No debouncing
+#define ST_DEBOUNCE_METHOD_MODE          0   ///< Mode selected for debounce
+#define ST_DEBOUNCE_METHOD_QUAD          1   ///< Quadratic fit used for debounce
+
+#define ST_DEBOUNCE_NA_RANGE             1   ///< Debounce Not Applied because out of range
+#define ST_DEBOUNCE_NA_METHOD            2   ///< Debounce Not Applied because of method-specific reason e.g. poor fit
+
+#define ST_CORR_BG_FLAG                  0x1 ///< Flag if Background Subtraction applied
+#define ST_CORR_BAD_PIX_FLAG             0x2 ///< Flag if Bad Pixel map applied
+#define ST_CORR_FLATFIELD_FLAG           0x4 ///< Flag is Flat Field correction applied
+#define ST_CORR_DEBOUNCE_FLAG            0x8 ///< Flag if Debounce correction applied
+#define ST_CORR_GEO_FLAG                0x10 ///< Flag if Geocorrection applied
+
 //******************************************************************
 // Data structures, enumerations and type definitions
 //******************************************************************
@@ -77,11 +92,22 @@ struct StFrameHeader
     STFrameMetadata metadata;   ///< Frame metadata
 
     uint8_t capCount;           ///< Frame Capacitor count
+    
+    // Post-processing details (43 bytes)
+    //-=-= NOTE Be careful of capCount and capPadding
+    uint8_t capPadding;         ///< Padding from uint8_t capCount
+    uint16_t debounceThresh;    ///< Debounce threshold * 100
+    int16_t debounceMethod;     ///< Debounce method 
+    uint32_t debounceApplied;   ///< Packed log of applied/out of range/method-specific status
+    int16_t debounceAmount[16]; ///< Per-asic record of debounce amount * 100
+    uint16_t appliedCorr;       ///< Flags of applied corrections
 
     static const uint32_t rsvd3Bytes = ST_FRAME_HEADER_BYTES - 
                                        (3 * 16) -           // params and data sections
                                        sizeof(metadata) -   // metadata
                                        sizeof(capCount) -   // capacitor count
+                                       sizeof(capPadding) - // padding for a uint8_t
+                                       42 -                 // post-processing metadata
                                        sizeof(uint64_t);    // frameTimestamp
     uint8_t  reserved3[rsvd3Bytes];
 
@@ -163,11 +189,21 @@ private:
     uint8_t        *mImagePtr;          ///< pointer to image section
     bool            mComplete[ST_MAX_SUBFRAME_COUNT];  ///< Individual subframe complete flags
     bool            mAllComplete;       ///< True if all subframes are complete
+    static int      sNumberOfHeads;
+
+    static int      sWidthInHeads;
+    static int      sHeightInHeads;
+
 
     //************************************************************
     // Static methods 
     //************************************************************
 public:
+
+    //----------------------------------------------
+    /// Get the number of heads defined in the DataDictionary - or is it the # actually connected?? TODO
+    static int getNumberOfHeads(void) { return sNumberOfHeads; }
+
 
     //----------------------------------------------
     /// Get the default frame type used when the default constructor is called
@@ -177,6 +213,15 @@ public:
     /// Set the default frame type used when the default constructor is called
     static void setDefaultFrameType(STSystemType frameType = ST_FRAME_DEFAULT_FRAME_TYPE)
     { sDefFrameType = (ST_SYS_NONE == frameType)? ST_FRAME_DEFAULT_FRAME_TYPE: frameType; }
+
+
+    // Number of heads and the SHAPE are interlinked HERE
+    static void setNumberOfHeads(int numberofheads)
+    {
+        sNumberOfHeads = numberofheads;
+        sWidthInHeads = ( ( sNumberOfHeads % 2) == 0? 2: 1); // 2 or 4 --> 2
+        sHeightInHeads = ( sNumberOfHeads == 4) ? 2: 1;      // 1 or 2 -->1;  4 --> 2
+    }
 
     //----------------------------------------------
     // Get pixel size in bytes from pixel type
@@ -428,7 +473,8 @@ public:
     /// Return true if this is a Mega-Pad frame buffer
     bool isMegaPad(void)
     {
-        return (ST_SYS_MEGAPAD == getFrameType());
+        return ( sNumberOfHeads > 1);
+        // #MEGACLEANUPreturn (ST_SYS_MEGAPAD == getFrameType());
     }
 
     //----------------------------------------------
@@ -709,7 +755,7 @@ private:
     ///
     /// @return 0 if ok, else negative error code
     /// 
-    int32_t loadMMRawFrame(const MXRawFrame* pRawFrame, uint32_t frameNumber);
+    int32_t loadMMRawFrame(const MXRawFrame* pRawFrame, uint32_t frameNumber, uint32_t index =0);
 
     //----------------------------------------------
     /// Load a raw MEGA-PAD frame into one quadrant of the framebuffer
@@ -722,8 +768,9 @@ private:
     /// hold an MEGA-PAD raw frame
     ///
     /// @return 0 if ok, else negative error code
-    /// 
-    int32_t loadMGRawFrame(const MXRawFrame* pRawFrame, uint32_t frameNumber, uint32_t index);
+    ///
+    /// // #MEGACLEANUP
+    // int32_t loadMGRawFrame(const MXRawFrame* pRawFrame, uint32_t frameNumber, uint32_t index);
 
     //----------------------------------------------
     /// Load a raw KECK-PAD frame into the framebuffer
@@ -736,7 +783,7 @@ private:
     ///
     /// @return 0 if ok, else negative error code
     /// 
-    int32_t loadKKRawFrame(const KKRawFrame* pRawFrame, uint32_t frameNumber);
+    int32_t loadKKRawFrame(const KKRawFrame* pRawFrame, uint32_t frameNumber, uint32_t index =0);
 
     //----------------------------------------------
     /// Apply a grid overlay to the image

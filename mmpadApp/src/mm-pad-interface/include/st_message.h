@@ -65,6 +65,10 @@ namespace ST_INTERFACE
 #define ST_STR_BATCH_CORRECT          "BatchCorrect"
 #define ST_STR_GET_RUN_FRAME          "GetRunFrame"
 #define ST_STR_RUN_DMC                "RunDMC"
+#define ST_STR_GET_POST_OPTS          "GetPostOpts"
+#define ST_STR_SET_POST_OPTS          "SetPostOpts"
+#define ST_STR_GET_SER_NUM            "GetSerNum"
+#define ST_STR_GET_NUM_HEADS          "GetNumHeads"
 
 //------------------------------------------------------------------
 // Command and Response Message parameter names
@@ -134,7 +138,9 @@ namespace ST_INTERFACE
 #define ST_STR_USER_NAME              "UserName"
 #define ST_STR_COMPUTER_NAME          "ComputerName"
 #define ST_STR_OPERATING_SYSTEM       "OperatingSystem"
-    
+#define ST_STR_POST_OPTS              "PostOpts"
+#define ST_STR_NUM_HEADS              "NumHeads"
+#define ST_STR_SERNUM                 "SerialNum"    
 ///@} end of definitions and constants
 
 //******************************************************************
@@ -174,7 +180,11 @@ namespace ST_INTERFACE
         MM_MSG_ENABLE_BACKGROUND,
         MM_MSG_BATCH_CORRECT,
         MM_MSG_GET_PARAM_ARRAY,
-        MM_MSG_GET_SERVER_CLIENT_LIST
+        MM_MSG_GET_SERVER_CLIENT_LIST,
+        MM_MSG_GET_POST_OPTS,
+        MM_MSG_SET_POST_OPTS,
+        MM_MSG_GET_NUM_HEADS,
+	MM_MSG_GET_SER_NUM
     } MMMsgCmd;
 
 //----------------------------------------------

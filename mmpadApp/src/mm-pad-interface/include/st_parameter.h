@@ -400,6 +400,9 @@ public:
     /// Destructor
     ~StParameter(void);
 
+    //---------------------------------------------
+    void setScale(double new_scale) { mScale = new_scale; };
+    
     //----------------------------------------------
     /// Return true if param is readable
     bool isReadable(void) const { return (mAccess != ACT_WO); }
@@ -472,12 +475,23 @@ public:
     uint32_t    getStartBit(void) {return mStartBit;}
     uint32_t    getNBits(void) {return mNBits;}
     bool        isVolatile(void) {return mVolatile;}
+#ifdef __GNUC__
+    #pragma GCC diagnostic push
+    #pragma GCC diagnostic ignored "-Wignored-qualifiers"
+#endif
+
 
     // Telemetry
     const std::string      getTelemetryName(void) const { return const_cast<const std::string&>(mTelemName); }
     const uint32_t         getTelemetryIndex(void) const { return const_cast<const std::uint32_t&>(mTelemIndex); }
     const uint32_t         getTelemetryDimension(void) const { return const_cast<const std::uint32_t&>(mTelemDimension); }
     const uint32_t         getTelemetryArrayStride(void) const { return const_cast<const std::uint32_t&>(mTelemArrayStride); }
+
+#ifdef __GNUC__
+    #pragma GCC diagnostic pop
+#endif
+
+
 
     // Data Type
     STDataType  getDataType(void) { return static_cast<STDataType>(mDataType); }

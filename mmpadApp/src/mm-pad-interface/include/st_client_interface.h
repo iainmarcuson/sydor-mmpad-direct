@@ -39,7 +39,7 @@ class StDataIndex;
 // Definitions and Constants
 //******************************************************************
 #define ST_CLIENT_IF_MAJOR  (3)     ///< Library major version
-#define ST_CLIENT_IF_MINOR  (8)     ///< Library minor version
+#define ST_CLIENT_IF_MINOR  (12)     ///< Library minor version
 #define ST_CLIENT_IF_BUILD  (0)     ///< Library build
 #define ST_CLIENT_IF_PATCH  (0)     ///< Library patch
 
@@ -403,7 +403,7 @@ public:
     ///
     template<typename T>
     int32_t setParam(const std::string& id, const T& value, 
-                     uint32_t index = 0, uint32_t padIndex = 0)
+                     uint32_t index = 0, uint32_t padIndex = 0xFF) // YF change from 0 to support multihead by default
     {
         if (!isServerConnected("setParam")) return ST_ERR_SVR_NOT_OPEN;
 
@@ -463,6 +463,32 @@ public:
     /// 
     int32_t batchCorrect(const std::string& setName, const std::string& runName);
 
+    //----------------------------------------------
+    /// Update the post-processing options string
+    ///
+    /// @param[in] opts    Options string
+    ///
+    /// @return 0 on success, or negative error code
+    int32_t updatePostOpts(const std::string &opts);
+
+    //----------------------------------------------
+    /// Get the post-processing options string
+    ///
+    /// @return 0 on success, or negative error code
+    int32_t getPostOptStr(std::string &resp_str);
+
+    //----------------------------------------------
+    /// Get the number of heads
+    ///
+    /// @return 0 on success, or negative error code
+    int32_t getNumHeads(uint32_t &num_heads);
+
+    //----------------------------------------------
+    /// Get serial number
+    /// @param[out] ser_num The serial number of the server
+    /// @return 0 on success, or negative error code
+    int32_t getSerialNum(int32_t &ser_num);
+    
     //----------------------------------------------
     /// Enable background subtraction
     ///

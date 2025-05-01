@@ -87,7 +87,7 @@ namespace ST_INTERFACE
 /// @name Server Interface Version
 /// @{
 #define ST_SERVER_IF_MAJOR  (3)     ///< Library major version
-#define ST_SERVER_IF_MINOR  (10)     ///< Library minor version
+#define ST_SERVER_IF_MINOR  (12)     ///< Library minor version
 #define ST_SERVER_IF_BUILD  (0)     ///< Library build
 #define ST_SERVER_IF_PATCH  (0)     ///< Library patch
 
@@ -112,7 +112,10 @@ const uint32_t COMM_THREAD_STOP_MSEC   = 3000;  ///< Default max time to wait fo
 #define ST_ADDR_FRAME_SKIP               0x0001     ///< Background frames to skip count register
 #define ST_ADDR_DEBOUNCE_METHOD          0x0002     ///< Debounce method register
 #define ST_ADDR_BATCH_CORRECT_BUSY       0x0003     ///< Batch correct busy flag
-    
+#define ST_ADDR_DEBOUNCE_FRACTION        0x0004     ///< Debounce histogram minimum fraction
+#define ST_ADDR_FS_BIAS                  0x0005     ///< Full-scale bias voltage
+#define ST_ADDR_BIAS_MIN                 0x0006     ///< Minimum allowable full-scale bias voltage
+#define ST_ADDR_BIAS_MAX                 0x0007     ///< Maximum allowable full-scale bias voltage
 // Per-server
 #define ST_ADDR_SYSTEM_TYPE              0x0100     ///< System type
 #define ST_ADDR_SUBFRAME_COUNT           0x0101     ///< Subframe (aka quartus) count
@@ -180,6 +183,7 @@ private:
 	uint32_t mDefaultFrameOptions;              ///< Default frame correction settings
     uint32_t mDefaultBgSkipFrames;              ///< Default frames to skip
     uint32_t mDefaultDebounceMethod;            ///< Default debouncing method
+    double mDefaultDebounceFraction;            ///< Default threshold for histogram of debounce
     uint32_t mBDefaultBatchCorrectBusy;          ///< Default status of Batch Correct Busy flag
 
     // Message handling
@@ -234,6 +238,7 @@ public:
     int32_t setResponseHandler(ResponseHandler* pHandler, 
                                uint32_t version, 
                                STSystemType systemType,
+                               int numberofheads,
                                bool isSimulator);
 
     //----------------------------------------------
@@ -252,10 +257,11 @@ public:
     /// Set the next available sample frame
     ///
     /// @param frame     reference to the sample frame
+    /// @param bg_adj    pointer to a background raster
     ///
     /// @return 0 if ok, negative error code on any error
     ///
-    int32_t setSampleFrame(ST_INTERFACE::StFrameBuffer &frame);
+    int32_t setSampleFrame(ST_INTERFACE::StFrameBuffer &frame, double *bg_adj = nullptr);
 
     //----------------------------------------------
     /// Set the next available sensor telemetry data
@@ -266,6 +272,13 @@ public:
     ///
     int32_t setTelemetry(const std::vector<uint16_t> &telemetryData);
 
+    //----------------------------------------------
+    /// Get a parameter by name
+    StParameter* findParameter(const std::string &id)
+	{
+	    return mDataStore.findParameter(id);
+	}
+    
     //----------------------------------------------
     /// Get a pointer to the current set of sensor telemetry data
     ///
@@ -503,6 +516,10 @@ private:
     int32_t doReloadCorr(void);
 
     //----------------------------------------------
+    /// fetch the serial number
+    int32_t doGetSerialNumber(void);
+    
+    //----------------------------------------------
     /// enable or disable background subtraction
     int32_t doEnableBackground(void);
     
@@ -510,6 +527,18 @@ private:
     /// Batch correct a whole run
     int32_t doBatchCorrectRun(void);
 
+    //----------------------------------------------
+    /// Get the post-processing options
+    int32_t doGetPostProcOpts(void);
+
+    //----------------------------------------------
+    /// Update the post-processing options
+    int32_t doUpdatePostProcOpts(void);
+
+    //----------------------------------------------
+    /// Get the number of heads in the system
+    int32_t doGetNumHeads(void);
+    
     //----------------------------------------------
     /// perform the StartCaptureRun command
     int32_t doStartCaptureRun(void);

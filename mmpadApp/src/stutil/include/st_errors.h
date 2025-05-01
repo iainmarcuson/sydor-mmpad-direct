@@ -118,6 +118,10 @@ const int32_t ST_ERR_FRAME_TYPE         = ST_ERR_BASE - 222;    ///< Invalid fra
 const int32_t ST_ERR_DATA_TYPE          = ST_ERR_BASE - 223;    ///< Invalid data type
 const int32_t ST_ERR_NOT_ARRAY          = ST_ERR_BASE - 224;    ///< Parameter is not an array
 const int32_t ST_ERR_DIMENSION          = ST_ERR_BASE - 225;    ///< Invalid dimension
+const int32_t ST_ERR_NO_BG              = ST_ERR_BASE - 226;    ///< Background image needed but not calculated
+const int32_t ST_ERR_NO_FF              = ST_ERR_BASE - 227;    ///< Flatfield image needed but not loaded
+const int32_t ST_ERR_NO_BAD_PIX         = ST_ERR_BASE - 228;    ///< Bad pixel map needed but not loaded
+const int32_t ST_ERR_NO_GEOCORR         = ST_ERR_BASE - 229;    ///< Geocorrection parameters needed but not loaded
 
 // File system errors
 const int32_t ST_ERR_NO_DISK            = ST_ERR_BASE - 300;    ///< No image disk(s) found
@@ -206,6 +210,7 @@ const int32_t ST_ERR_QUARTUS_2          = ST_ERR_BASE - 462;    ///< Cannot conn
 const int32_t ST_ERR_QUARTUS_3          = ST_ERR_BASE - 463;    ///< Cannot connect to Quartus 3
 const int32_t ST_ERR_NO_QUARTII         = ST_ERR_BASE - 464;    ///< No quarti are defined
 const int32_t ST_ERR_NO_HOSTIF          = ST_ERR_BASE - 465;    ///< No host interface found
+const int32_t ST_ERR_THERMAL            = ST_ERR_BASE - 466;    ///< Thermal problem
 
 // Aurora Communication Protocol Errors
 const int32_t ST_ERR_ACP_NO_XCVR        = ST_ERR_BASE - 480;    ///< No transceiver connected

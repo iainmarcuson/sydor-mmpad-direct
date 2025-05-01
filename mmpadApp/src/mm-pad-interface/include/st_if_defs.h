@@ -44,9 +44,10 @@
 #define ST_MAX_SERNUM_LEN           32          ///< Max PAD Serial number string length
 
 #define ST_MAX_SUBFRAME_COUNT       4           ///< Max number of PAD heads in an X-PAD system.
-#define MM_SUBFRAME_COUNT           1           ///< Number of PAD heads in a MM-PAD system
-#define MG_SUBFRAME_COUNT           4           ///< Number of PAD heads in a Mega-PAD system.
-#define KK_SUBFRAME_COUNT           1           ///< Number of PAD heads in a Keck-PAD system
+// #MEGACLEANUP
+//#define MM_SUBFRAME_COUNT           1           ///< Number of PAD heads in a MM-PAD system
+//#define MG_SUBFRAME_COUNT           4           ///< Number of PAD heads in a Mega-PAD system.
+//#define KK_SUBFRAME_COUNT           1           ///< Number of PAD heads in a Keck-PAD system
 #define DEF_SUBFRAME_COUNT          (0xff)      ///< Use default subframe Index
 #define ST_SUBFRAME_SENSOR_COUNT    16          ///< Number of sensor asics per PAD head
 #define KK_MAX_IMAGE_COUNT          536870911   ///< Max KeckPAD Image count (to avoid overflow)
@@ -66,9 +67,26 @@ typedef enum
 {
     ST_SYS_NONE,            ///< None, unknown, or any
     ST_SYS_MMPAD,           ///< MM-PAD
-    ST_SYS_MEGAPAD,         ///< Mega-PAD
-    ST_SYS_KECKPAD          ///< Keck-PAD
+    ST_SYS_MEGAPAD_OLD,     ///< No longer used, but keep in enum to keep from breaking other clients
+    ST_SYS_KECKPAD,         ///< Keck-PAD
 } STSystemType;
+
+//------------------------------------------------------------------
+// Frame Size
+typedef enum
+{
+    ST_SZ_NONE,            ///< None, unknown, or any
+    ST_SZ_XPAD,           ///< 1 Head -- 512x512
+    ST_SZ_HFPAD,           ///< 2 Heads, half-mega, 1024x512
+    ST_SZ_MGPAD,            ///< 4 Heads, Mega, 1024x1024
+    ST_SZ_SM,               ///< Submodule, 256x128
+    ST_SZ_SMXP,             ///< Expanded submodule, 259x128
+    ST_SZ_XGEO,             ///< XPAD geocorrected, 532x612
+    ST_SZ_HFGEO,            ///< Half-mega geocorrected, 1072x612
+    ST_SZ_MGGEO,            ///< Megapad geocorrected, 2048x2048 -=-= XXX IM Placeholder
+    ST_SZ_FREE              ///< Freely-sized
+} STFrameSizeType;
+
 
 //------------------------------------------------------------------
 // Invalid handle
@@ -132,7 +150,7 @@ const double ST_DBL_MIN_INT = -ST_DBL_MAX_INT;
 #define ST_MAX_DICTIONARY_NBYTES  1000000   ///< Max data dictionary length in bytes
 #define ST_MAX_DATA_INDEX_NBYTES  5000000   ///< Max data index length in bytes
 #define ST_MAX_CONFIG_DATA_NBYTES  100000   ///< Max config data length in bytes
-#define ST_MAX_FRAMEBUFFER_NBYTES 5000000   ///< Max framebuffer length in bytes 
+#define ST_MAX_FRAMEBUFFER_NBYTES 20000000   ///< Max framebuffer length in bytes 
 #define ST_MAX_CLIENT_LIST_NBYTES  100000   ///< Max client list length in bytes
 
 // StartCaptureRun option flags
@@ -194,6 +212,8 @@ typedef enum
 #define MAX_FRAME_COUNT_PARAM       "Max_Frame_Count"
 #define TRIGGER_COUNT_PARAM         "Trigger_Count"
 #define TRIGGER_MODE_PARAM          "Trigger_Mode"
+#define EXPOSURE_MODE               "Exposure_Mode" // Keck only!
+
 #define CONNECTED_HEAD_PARAM        "Connected_Head"
 #define SERDES_ALIGNMENT_PARAM      "SERDES_Alignment_Status"
 #define READOUT_SW_RESET_PARAM      "Readout_SW_Reset"
@@ -433,10 +453,10 @@ typedef struct
     uint32_t runFrameNumber;        ///< frame number reset when capture is armed
     uint32_t triggerFrameNumber;    ///< frame number reset on leading edge of each trigger
     uint64_t timeStamp;             ///< timestamp of frame relative to ARM
-    uint32_t integrationTime;       ///< Integration time (uSec)
-    uint32_t interFrameTime;        ///< Inter-frame time (uSec)
+    uint32_t integrationTime;       ///< Integration time (uSec) -- Actually, the integration time is in units of 10*ns
+    uint32_t interFrameTime;        ///< Inter-frame time (uSec) -- Acutally, the interframe time is in units of 10*ns
     uint32_t exposureMode;          ///< See field definitons
-    uint32_t detectors;             ///< bit mask identifying active detectors
+    uint32_t detectors;             ///< bit mask identifying active detectors -- Now the readout delay in units of 10*ns
 } STFrameMetadata;
 #pragma pack(pop)
 
@@ -510,12 +530,13 @@ const uint32_t MX_RAW_FRAME_WORDS = MX_RAW_FRAME_BYTES / sizeof(int32_t);
 //******************************************************************
 /// @name MM-PAD Specific frame related definitions
 /// @{
-const uint32_t MM_SENSOR_COUNT      = MM_SUBFRAME_COUNT * ST_SUBFRAME_SENSOR_COUNT;
+// #MEGACLEANUP: TODO - may need top make these dynamic?
+//const uint32_t MM_SENSOR_COUNT      = MM_SUBFRAME_COUNT * ST_SUBFRAME_SENSOR_COUNT;
 
-const uint32_t MM_RAW_IMAGE_WIDTH   = MX_RAW_IMAGE_WIDTH;  ///< pixels per row
-const uint32_t MM_RAW_IMAGE_HEIGHT  = MX_RAW_IMAGE_HEIGHT; ///< rows per image
-const uint32_t MM_RAW_IMAGE_PIXELS  = MM_RAW_IMAGE_HEIGHT * MM_RAW_IMAGE_WIDTH;
-const uint32_t MM_RAW_IMAGE_BYTES   = MM_RAW_IMAGE_PIXELS * MX_RAW_PIXEL_BYTES;
+//const uint32_t MM_RAW_IMAGE_WIDTH   = MX_RAW_IMAGE_WIDTH;  ///< pixels per row
+//const uint32_t MM_RAW_IMAGE_HEIGHT  = MX_RAW_IMAGE_HEIGHT; ///< rows per image
+//const uint32_t MM_RAW_IMAGE_PIXELS  = MM_RAW_IMAGE_HEIGHT * MM_RAW_IMAGE_WIDTH;
+//const uint32_t MM_RAW_IMAGE_BYTES   = MM_RAW_IMAGE_PIXELS * MX_RAW_PIXEL_BYTES;
 
 /// @} end of MM-PAD specific definitions
 
@@ -581,12 +602,12 @@ const uint32_t MM_GC_RAW_FRAME_WORDS = MM_GC_RAW_FRAME_BYTES / sizeof(int32_t);
 /// @name MegaPAD Specific frame related definitions
 ///@{
 
-const uint32_t MG_SENSOR_COUNT      = MG_SUBFRAME_COUNT * ST_SUBFRAME_SENSOR_COUNT;
+//const uint32_t MG_SENSOR_COUNT      = MG_SUBFRAME_COUNT * ST_SUBFRAME_SENSOR_COUNT;
 
-const uint32_t MG_RAW_IMAGE_WIDTH   = MX_RAW_IMAGE_WIDTH * 2;   ///< pixels per row
-const uint32_t MG_RAW_IMAGE_HEIGHT  = MX_RAW_IMAGE_HEIGHT * 2;  ///< rows per image
-const uint32_t MG_RAW_IMAGE_PIXELS  = MG_RAW_IMAGE_HEIGHT * MG_RAW_IMAGE_WIDTH;
-const uint32_t MG_RAW_IMAGE_BYTES   = MG_RAW_IMAGE_PIXELS * MX_RAW_PIXEL_BYTES;
+//const uint32_t MG_RAW_IMAGE_WIDTH   = MX_RAW_IMAGE_WIDTH * 2;   ///< pixels per row
+//const uint32_t MG_RAW_IMAGE_HEIGHT  = MX_RAW_IMAGE_HEIGHT * 2;  ///< rows per image
+//const uint32_t MG_RAW_IMAGE_PIXELS  = MG_RAW_IMAGE_HEIGHT * MG_RAW_IMAGE_WIDTH;
+//const uint32_t MG_RAW_IMAGE_BYTES   = MG_RAW_IMAGE_PIXELS * MX_RAW_PIXEL_BYTES;
 
 ///@} end of MegaPAD specific definitions
 
@@ -594,11 +615,11 @@ const uint32_t MG_RAW_IMAGE_BYTES   = MG_RAW_IMAGE_PIXELS * MX_RAW_PIXEL_BYTES;
 /// @name KeckPAD specific frame related definitions
 ///@{
 
-const uint32_t KK_SENSOR_COUNT         = KK_SUBFRAME_COUNT * ST_SUBFRAME_SENSOR_COUNT;
+// const uint32_t KK_SENSOR_COUNT         = KK_SUBFRAME_COUNT * ST_SUBFRAME_SENSOR_COUNT;
 const uint32_t KK_MAX_CAPACITOR_COUNT  = 8;     ///< max number of frames per KeckPAD "image"
 
 typedef uint16_t KKRawPixel;
-const STDataType KK_RAW_PIXEL_TYPE  = DT_INT16;  ///< Raw pixel type
+const STDataType KK_RAW_PIXEL_TYPE  = DT_UINT16;  ///< Raw pixel type // YF 5/8/24 change to DT_UINT16 from DT_INT16
 const uint32_t   KK_RAW_PIXEL_BYTES = (sizeof(KKRawPixel));
 
 const uint32_t KK_RAW_IMAGE_WIDTH   = (512);    ///< pixels per row
@@ -706,6 +727,8 @@ typedef struct STRunStatus_struct
     uint32_t    totalFrames;     ///< identical to maxFrames - for legacy compatibility
     uint32_t    capCount;        ///< capacitor count
     uint32_t    capSelect;       ///< capacitor select flags
+    uint32_t    exposureMode;    ///< exposure mode
+
     bool        noDiskSave;      ///< true if frames are NOT being saved to disk
     bool        isBackground;    ///< true if this is a background run
 
@@ -734,6 +757,7 @@ typedef struct STRunStatus_struct
         totalFrames = 0;
         capCount = 0;
         capSelect = 0;
+        exposureMode = 0;
         noDiskSave = false;
         isBackground = false;
     }

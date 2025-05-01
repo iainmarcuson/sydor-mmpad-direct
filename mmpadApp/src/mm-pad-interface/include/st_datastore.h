@@ -85,6 +85,8 @@ class StDataStore
 protected:
     STUTIL::Logger *pLog;                       ///< Logger instance
     
+    std::string m_jsonPath = "";
+    bool m_bInsideBase = false;
     //----------------------------------------------
     // Dictionary Metadata from JSON file
     uint32_t mDictVersion;                          ///< Dictionary version from JSON Metadata
@@ -110,6 +112,8 @@ protected:
 
     std::vector<StParameter> mTelemParams;   ///< get parameter definition from Telemetry index
 
+    bool m_AmIaClient = false;
+
 public:
 
     //----------------------------------------------
@@ -123,6 +127,15 @@ public:
     //----------------------------------------------
     // initialize everything - empty the data store
     void init(void);
+
+
+    //----------------------------------------------
+    /// get the number of Access enumeration values
+    bool amIaClient(void) { return m_AmIaClient; }
+    void setIamAClient(bool bYes) { m_AmIaClient = bYes;}
+
+
+
 
     //----------------------------------------------
     /// get the number of Access enumeration values
@@ -352,7 +365,7 @@ public:
     /// @return the number of values returned
     /// 
     int32_t getTelemetryScaledValues(const std::vector<uint16_t>& rawValues,
-                                     std::vector<double>& scaledValues);
+                                     std::vector<double>& scaledValues, uint32_t numHeads = 1) ;
 
     //----------------------------------------------
     /// Clear the modified bit on all parameters
