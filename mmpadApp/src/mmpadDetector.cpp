@@ -137,6 +137,10 @@ static const char *driverName = "mmpadDetector";
 #define MMPADSetNameString          "SETNAME"
 
 #define MMPADPADStatusString        "PADSTATUS"
+
+#define MMPADDigiCorrString         "PADDIGICORR"
+#define MMPADDigiCorrRBVString      "PADDIGICORRRBV"
+
 /** Driver for Dectris Pilatus pixel array detectors using their camserver server over TCP/IP socket */
 class mmpadDetector : public ADDriver {
 public:
@@ -150,6 +154,8 @@ public:
     virtual asynStatus writeFloat64(asynUser *pasynUser, epicsFloat64 value);
     virtual asynStatus writeOctet(asynUser *pasynUser, const char *value, 
                                     size_t nChars, size_t *nActual);
+    virtual asynStatus writeFloat64Array(asynUser *pasynUser, epicsFloat64 *value, size_t nElements);
+    virtual asynStatus readFloat64Array(asynUser *pasynUser, epicsFloat64 *value, size_t nElements, size_t *nIn);
     void report(FILE *fp, int details);
     /* These should be private but are called from C so must be public */
     void pilatusTask(); 
@@ -208,6 +214,8 @@ protected:
     int MMPADRunName;
     int MMPADSetName;
     int MMPADPADStatus;
+    int MMPADDigiCorr;
+    int MMPADDigiCorrRBV;
  private:                                       
     /* These are the methods that are new to this class */
     void abortAcquisition();
@@ -1512,6 +1520,7 @@ asynStatus mmpadDetector::writeInt32(asynUser *pasynUser, epicsInt32 value)
         double humidity_rbv;
         
         rtn = mLocalServer->getParam<double>("humidity", humidity_rbv, 0);
+        printf("Read humidity of %f\n", humidity_rbv);
         setDoubleParam(PilatusThHumid0, humidity_rbv);
     } else if (function == PilatusThresholdApply) {
         setThreshold();
@@ -1543,6 +1552,42 @@ asynStatus mmpadDetector::writeInt32(asynUser *pasynUser, epicsInt32 value)
     return status;
 }
 
+asynStatus mmpadDetector::readFloat64Array(asynUser *pasynUser, epicsFloat64 *value, size_t nElements, size_t *nIn)
+{
+    printf("In the read array function.\n");
+    fflush(stdout);
+
+    return asynSuccess;
+}
+
+/** Called when asyn clients call pasynFloat64->write().
+  * This function performs actions for some parameters, including ADAcquireTime, ADGain, etc.
+  * For all parameters it sets the value in the parameter library and calls any registered callbacks..
+  * \param[in] pasynUser pasynUser structure that encodes the reason and address.
+  * \param[in] value Value to write. */
+asynStatus mmpadDetector::writeFloat64Array(asynUser *pasynUser, epicsFloat64 *value, size_t nElements)
+{
+    int function = pasynUser->reason;
+    asynStatus status = asynSuccess;
+    const char *functionName = "writeFloat64Array";
+    double new_temps[16];
+    
+    if (function == MMPADDigiCorr)
+    {
+        double corr_readback;
+        for (int32_t param_idx = 0; param_idx < nElements; param_idx++)
+        {
+            corr_readback = -100+param_idx;
+            mLocalServer->setParam<double>("Correction_Value", value[param_idx], param_idx);
+            mLocalServer->getParam<double>("Correction_Value", corr_readback, param_idx);
+            new_temps[param_idx] = corr_readback;
+        }
+        callParamCallbacks();
+        doCallbacksFloat64Array(new_temps, 16, MMPADDigiCorrRBV, 0);
+    }
+
+    return status;
+}           
 
 /** Called when asyn clients call pasynFloat64->write().
   * This function performs actions for some parameters, including ADAcquireTime, ADGain, etc.
@@ -1810,7 +1855,7 @@ mmpadDetector::mmpadDetector(const char *portName, const char *camserverPort,
                                 int priority, int stackSize)
 
     : ADDriver(portName, 1, 0, maxBuffers, maxMemory,
-               0, 0,             /* No interfaces beyond those set in ADDriver.cpp */
+               asynFloat64ArrayMask, asynFloat64ArrayMask,             /* No interfaces beyond those set in ADDriver.cpp */
                ASYN_CANBLOCK, 1, /* ASYN_CANBLOCK=1, ASYN_MULTIDEVICE=0, autoConnect=1 */
                priority, stackSize),
       imagesRemaining(0), firstStatusCall(1)
@@ -1914,6 +1959,8 @@ mmpadDetector::mmpadDetector(const char *portName, const char *camserverPort,
     createParam(MMPADRunNameString,          asynParamOctet,   &MMPADRunName);
     createParam(MMPADSetNameString,          asynParamOctet,   &MMPADSetName);
     createParam(MMPADPADStatusString,        asynParamInt32,   &MMPADPADStatus);
+    createParam(MMPADDigiCorrString,         asynParamFloat64Array, &MMPADDigiCorr);
+    createParam(MMPADDigiCorrRBVString,      asynParamFloat64Array, &MMPADDigiCorrRBV);
     
     /* Set some default values for parameters */
     status =  setStringParam (ADManufacturer, "Dectris");

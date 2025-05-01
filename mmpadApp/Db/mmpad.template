@@ -741,3 +741,20 @@ record(longin, "$(P)$(R)PADStatus_RBV")
     field(DTYP, "asynInt32")
     field(INP, "@asyn($(PORT),$(ADDR),$(TIMEOUT))PADSTATUS")
 }
+
+record(waveform, "$(P)$(R)PADDigiCorr")
+{
+    field(DTYP, "asynFloat64ArrayOut")
+    field(INP, "@asyn($(PORT),$(ADDR),$(TIMEOUT))PADDIGICORR")
+    field(FTVL, "DOUBLE")
+    field(NELM, "16")
+}
+
+record(waveform, "$(P)$(R)PADDigiCorr_RBV")
+{
+    field(DTYP, "asynFloat64ArrayIn")
+    field(INP, "@asyn($(PORT),$(ADDR),$(TIMEOUT))PADDIGICORRRBV")
+    field(FTVL, "DOUBLE")
+    field(NELM, "16")
+    field(SCAN, "I/O Intr")
+}
